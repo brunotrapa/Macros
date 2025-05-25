@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Mistura de Macronutrientes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/javascript-lp-solver/prod/solver.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .nutrient-card {
+            background-color: #f9fafb; /* gray-50 */
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 1rem; /* p-4 */
+            margin-bottom: 0.75rem; /* mb-3 */
+        }
+        .nutrient-card h4 {
+            font-weight: 600; /* font-semibold */
+            color: #1f2937; /* gray-800 */
+        }
+        .nutrient-card p {
+            font-size: 0.875rem; /* text-sm */
+            color: #4b5563; /* gray-600 */
+        }
+        /* Custom styles for better visual appeal */
+        .btn-primary {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb; /* blue-600 */
+        }
+        .input-field {
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+        }
+        .results-container {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl bg-white p-6 sm:p-8 rounded-xl shadow-2xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Calculadora de Macronutrientes</h1>
+            <p class="text-gray-600 mt-2">Insira suas metas de macronutrientes para encontrar a mistura ideal de ingredientes, priorizando a aveia.</p>
+        </header>
+
+        <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">Ingredientes Disponíveis (por 100g):</h3>
+                <div class="space-y-3">
+                    <div class="nutrient-card">
+                        <h4>Pasta de Amendoim</h4>
+                        <p>Carboidratos: 13.5g, Proteínas: 23.5g, Gorduras: 49.5g</p>
+                    </div>
+                    <div class="nutrient-card">
+                        <h4>Albumina</h4>
+                        <p>Carboidratos: 5g, Proteínas: 85.7g, Gorduras: 0g</p>
+                    </div>
+                    <div class="nutrient-card">
+                        <h4>Aveia</h4>
+                        <p>Carboidratos: 50g, Proteínas: 16g, Gorduras: 9g</p>
+                    </div>
+                    <div class="nutrient-card">
+                        <h4>Leite (em pó desnatado ou similar)</h4>
+                        <p>Carboidratos: 50g, Proteínas: 34.5g, Gorduras: 0g</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">Metas de Macronutrientes (em gramas):</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="targetCarbs" class="block text-sm font-medium text-gray-700 mb-1">Carboidratos (g):</label>
+                        <input type="number" id="targetCarbs" value="20" class="input-field" placeholder="Ex: 20">
+                    </div>
+                    <div>
+                        <label for="targetProteins" class="block text-sm font-medium text-gray-700 mb-1">Proteínas (g):</label>
+                        <input type="number" id="targetProteins" value="31" class="input-field" placeholder="Ex: 31">
+                    </div>
+                    <div>
+                        <label for="targetFats" class="block text-sm font-medium text-gray-700 mb-1">Gorduras (g):</label>
+                        <input type="number" id="targetFats" value="24" class="input-field" placeholder="Ex: 24">
+                    </div>
+                </div>
+                <button id="calculateButton" class="w-full btn-primary mt-6">Calcular Mistura</button>
+            </div>
+        </div>
+
+        <div id="resultsArea" class="mt-8 results-container hidden">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Resultado da Mistura Ideal:</h2>
+            <div id="ingredientResults" class="space-y-2 mb-4">
+                <p>Pasta de Amendoim: <span id="amendoimAmount" class="font-medium">0</span> g</p>
+                <p>Albumina: <span id="albuminaAmount" class="font-medium">0</span> g</p>
+                <p>Aveia: <span id="aveiaAmount" class="font-medium">0</span> g</p>
+                <p>Leite: <span id="leiteAmount" class="font-medium">0</span> g</p>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Macronutrientes Resultantes:</h3>
+            <div id="macroResults" class="space-y-1 text-sm">
+                <p>Carboidratos: <span id="resultCarbs" class="font-medium">0</span> g</p>
+                <p>Proteínas: <span id="resultProteins" class="font-medium">0</span> g</p>
+                <p>Gorduras: <span id="resultFats" class="font-medium">0</span> g</p>
+            </div>
+        </div>
+        <div id="messageArea" class="mt-4 text-center"></div>
+    </div>
+
+    <script>
+        // Definição dos ingredientes e seus macronutrientes por 1 grama
+        const ingredients = {
+            amendoim: { name: "Pasta de Amendoim", carb: 0.135, prot: 0.235, fat: 0.495, varName: "amendoim_g" },
+            albumina: { name: "Albumina", carb: 0.050, prot: 0.857, fat: 0.000, varName: "albumina_g" },
+            aveia:    { name: "Aveia", carb: 0.500, prot: 0.160, fat: 0.090, varName: "aveia_g" },
+            leite:    { name: "Leite", carb: 0.500, prot: 0.345, fat: 0.000, varName: "leite_g" }
+        };
+
+        const calculateButton = document.getElementById('calculateButton');
+        const resultsArea = document.getElementById('resultsArea');
+        const messageArea = document.getElementById('messageArea');
+
+        calculateButton.addEventListener('click', () => {
+            // Limpar mensagens e resultados anteriores
+            messageArea.textContent = '';
+            resultsArea.classList.add('hidden');
+
+            // Obter valores das metas
+            const targetCarbs = parseFloat(document.getElementById('targetCarbs').value);
+            const targetProteins = parseFloat(document.getElementById('targetProteins').value);
+            const targetFats = parseFloat(document.getElementById('targetFats').value);
+
+            // Validar entradas
+            if (isNaN(targetCarbs) || isNaN(targetProteins) || isNaN(targetFats) ||
+                targetCarbs < 0 || targetProteins < 0 || targetFats < 0) {
+                messageArea.textContent = 'Por favor, insira valores numéricos válidos e não negativos para os macronutrientes.';
+                messageArea.className = 'mt-4 text-center text-red-600 font-medium p-3 bg-red-100 rounded-md';
+                return;
+            }
+            
+            // Configurar o modelo para o solver.js
+            // Queremos maximizar a quantidade de aveia.
+            let model = {
+                optimize: ingredients.aveia.varName,
+                opType: "max",
+                constraints: {
+                    carbConstraint: { equal: targetCarbs },
+                    protConstraint: { equal: targetProteins },
+                    fatConstraint:  { equal: targetFats }
+                },
+                variables: {
+                    // Cada variável é a quantidade em gramas do ingrediente.
+                    // As propriedades de cada variável são seus coeficientes nas restrições.
+                    [ingredients.amendoim.varName]: { 
+                        carbConstraint: ingredients.amendoim.carb, 
+                        protConstraint: ingredients.amendoim.prot, 
+                        fatConstraint: ingredients.amendoim.fat 
+                    },
+                    [ingredients.albumina.varName]: { 
+                        carbConstraint: ingredients.albumina.carb, 
+                        protConstraint: ingredients.albumina.prot, 
+                        fatConstraint: ingredients.albumina.fat 
+                    },
+                    [ingredients.aveia.varName]: { 
+                        carbConstraint: ingredients.aveia.carb, 
+                        protConstraint: ingredients.aveia.prot, 
+                        fatConstraint: ingredients.aveia.fat
+                        // A variável a ser otimizada (aveia_g) não precisa de uma entrada especial aqui
+                        // além de ser listada em 'optimize'.
+                    },
+                    [ingredients.leite.varName]: { 
+                        carbConstraint: ingredients.leite.carb, 
+                        protConstraint: ingredients.leite.prot, 
+                        fatConstraint: ingredients.leite.fat 
+                    }
+                },
+                // Por padrão, as variáveis são não-negativas (>= 0)
+                 options: {
+                    tolerance: 0.001 // Define a tolerância para os cálculos
+                }
+            };
+
+            // Resolver o problema
+            const solution = solver.Solve(model);
+
+            // Exibir os resultados
+            if (solution.feasible) {
+                const amendoimAmount = solution[ingredients.amendoim.varName] || 0;
+                const albuminaAmount = solution[ingredients.albumina.varName] || 0;
+                const aveiaAmount = solution[ingredients.aveia.varName] || 0;
+                const leiteAmount = solution[ingredients.leite.varName] || 0;
+
+                document.getElementById('amendoimAmount').textContent = amendoimAmount.toFixed(2);
+                document.getElementById('albuminaAmount').textContent = albuminaAmount.toFixed(2);
+                document.getElementById('aveiaAmount').textContent = aveiaAmount.toFixed(2);
+                document.getElementById('leiteAmount').textContent = leiteAmount.toFixed(2);
+
+                // Calcular macronutrientes resultantes para verificação
+                const resultCarbs = (amendoimAmount * ingredients.amendoim.carb) +
+                                    (albuminaAmount * ingredients.albumina.carb) +
+                                    (aveiaAmount * ingredients.aveia.carb) +
+                                    (leiteAmount * ingredients.leite.carb);
+                const resultProteins = (amendoimAmount * ingredients.amendoim.prot) +
+                                       (albuminaAmount * ingredients.albumina.prot) +
+                                       (aveiaAmount * ingredients.aveia.prot) +
+                                       (leiteAmount * ingredients.leite.prot);
+                const resultFats = (amendoimAmount * ingredients.amendoim.fat) +
+                                   (albuminaAmount * ingredients.albumina.fat) +
+                                   (aveiaAmount * ingredients.aveia.fat) +
+                                   (leiteAmount * ingredients.leite.fat);
+
+                document.getElementById('resultCarbs').textContent = resultCarbs.toFixed(2);
+                document.getElementById('resultProteins').textContent = resultProteins.toFixed(2);
+                document.getElementById('resultFats').textContent = resultFats.toFixed(2);
+                
+                resultsArea.classList.remove('hidden');
+                messageArea.textContent = 'Cálculo realizado com sucesso!';
+                messageArea.className = 'mt-4 text-center text-green-600 font-medium p-3 bg-green-100 rounded-md';
+
+            } else {
+                messageArea.textContent = 'Não foi possível encontrar uma combinação de ingredientes para as metas especificadas. Tente ajustar os valores.';
+                messageArea.className = 'mt-4 text-center text-red-600 font-medium p-3 bg-red-100 rounded-md';
+                document.getElementById('amendoimAmount').textContent = "0";
+                document.getElementById('albuminaAmount').textContent = "0";
+                document.getElementById('aveiaAmount').textContent = "0";
+                document.getElementById('leiteAmount').textContent = "0";
+                document.getElementById('resultCarbs').textContent = "0";
+                document.getElementById('resultProteins').textContent = "0";
+                document.getElementById('resultFats').textContent = "0";
+            }
+        });
+    </script>
+</body>
+</html>
